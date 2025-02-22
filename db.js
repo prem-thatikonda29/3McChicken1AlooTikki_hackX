@@ -1,22 +1,19 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const username = 'manmeet';
-const password = 'manu231';
-const clusterUrl = 'cluster0.mongodb.net'; // Replace with your actual cluster URL
+const uri =
+    "mongodb+srv://manuinmumbai:m1@cluster0.jum3w.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
-const uri = `mongodb+srv://${username}:${password}@${clusterUrl}/?retryWrites=true&w=majority`;
-
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
-  }
+const clientOptions = {
+    serverApi: { version: "1", strict: true, deprecationErrors: true },
 };
 
-export default connectDB;
+async function connectDB() {
+    console.log("🟡 Attempting to connect to MongoDB...");
+
+    mongoose
+        .connect(uri, clientOptions)
+        .then(() => console.log("✅ Connected to MongoDB!"))
+        .catch((err) =>
+            console.error("❌ MongoDB Connection Error:", err.message)
+        );
+}
