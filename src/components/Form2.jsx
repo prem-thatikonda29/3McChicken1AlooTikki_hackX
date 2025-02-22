@@ -30,7 +30,7 @@ const MedicalForm = () => {
   });
 
   const totalSteps = 4;
-  const progress = ((currentStep + 1) / totalSteps) * 100 - 1;
+  const progress = (currentStep / totalSteps) * 100;
 
   const updateFormData = (category, field, value) => {
     setFormData((prev) => ({
@@ -661,7 +661,7 @@ const MedicalForm = () => {
           />
         </div>
         <div className="mt-2 text-sm text-gray-600 text-right">
-          Step {currentStep + 1} of {totalSteps}
+          Step {currentStep} of {totalSteps}
         </div>
       </div>
 

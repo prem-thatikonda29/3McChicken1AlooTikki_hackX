@@ -1,15 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./components/Login";
-import Form from "./components/Form2";
+// import Form from "./components/Form2";
 import Home from "./components/Home";
+import Landing from "./components/Landing";
+import DynamicQuestions from "./components/DyanamicQuestions";
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/form" element={<Form />} />
+        {/* <Route path="/form" element={<Form />} /> */}
+        <Route path="/dynamic" element={<DynamicQuestions />} />
         <Route path="/home" element={<Home />} />
       </Routes>
     </Router>
