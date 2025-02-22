@@ -1,8 +1,10 @@
 import express from "express";
-// import connectDB from "./db.js";
+import cors from "cors";
 import mongoose from "mongoose";
+import medicalRoutes from "./routers/medicalRoutes.js";
 
 const app = express();
+app.use(cors());
 const port = 3000;
 
 const uri =
@@ -23,12 +25,13 @@ async function connectDB() {
         );
 }
 
-// connectDB();
 // Middleware to parse JSON bodies
 app.use(express.json());
 
 console.log("🟡 Calling connectDB()...");
 connectDB();
+
+app.use("api/medical", medicalRoutes);
 
 app.get("/", (req, res) => {
     res.send("Hello World!");
