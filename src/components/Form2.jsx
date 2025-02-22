@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 
 const MedicalForm = () => {
   const [currentStep, setCurrentStep] = React.useState(0);
@@ -42,11 +42,142 @@ const MedicalForm = () => {
     }));
   };
 
+  const generateMedicalDescription = () => {
+    let description = "Medical Assessment Summary:\n\n";
+
+    // Basic Information
+    description += "Personal Information:\n";
+    description += `Full Name: ${formData.personalInfo.fullName}\n`;
+    description += `Email: ${formData.personalInfo.email}\n`;
+    description += `Age: ${formData.personalInfo.age}\n`;
+    description += `Gender: ${formData.personalInfo.gender}\n`;
+
+    // Physical Measurements
+    description += "\nPhysical Measurements:\n";
+    description += `Height: ${formData.personalInfo.height} cm\n`;
+    description += `Weight: ${formData.personalInfo.weight} kg\n`;
+
+    // Lifestyle
+    description += "\nLifestyle Factors:\n";
+    description += `Smoking: ${formData.lifestyle.smoking}\n`;
+    description += `Alcohol Consumption: ${formData.lifestyle.alcohol}\n`;
+    description += `Exercise Frequency: ${formData.medicalHistory.exercise}\n`;
+
+    // Medical History
+    description += "\nMedical Conditions:\n";
+    description += `Current Conditions: ${
+      formData.medicalHistory.conditions.length
+        ? formData.medicalHistory.conditions.join(", ")
+        : "None"
+    }\n`;
+
+    // Medications
+    description += "\nMedications:\n";
+    description += `Currently Taking Medications: ${formData.medicalHistory.medications.taking}\n`;
+    if (formData.medicalHistory.medications.taking === "yes") {
+      description += `Medication List: ${formData.medicalHistory.medications.list}\n`;
+    }
+
+    // Family History
+    description += "\nFamily History:\n";
+    description += `Has Family History: ${formData.medicalHistory.familyHistory.has}\n`;
+    if (formData.medicalHistory.familyHistory.has === "yes") {
+      description += `Family Conditions: ${formData.medicalHistory.familyHistory.conditions.join(
+        ", "
+      )}\n`;
+    }
+
+    return description;
+  };
+
   const handleNext = () => {
     if (currentStep < totalSteps - 1) {
       setCurrentStep((prev) => prev + 1);
+
+      // Log current form state after each step
+      console.log("Current Form Data:", {
+        step: currentStep + 1,
+        formData,
+      });
     } else {
-      console.log("Final Form Data:", formData);
+      // On final submission
+      const description = generateMedicalDescription();
+      const medicalFormData = {
+        formData: {
+          personalInfo: {
+            fullName: formData.personalInfo.fullName,
+            email: formData.personalInfo.email,
+            age: formData.personalInfo.age,
+            gender: formData.personalInfo.gender,
+            height: formData.personalInfo.height,
+            weight: formData.personalInfo.weight,
+          },
+          lifestyle: {
+            smoking: formData.lifestyle.smoking,
+            alcohol: formData.lifestyle.alcohol,
+          },
+          medicalHistory: {
+            conditions: formData.medicalHistory.conditions,
+            medications: {
+              taking: formData.medicalHistory.medications.taking,
+              list: formData.medicalHistory.medications.list,
+            },
+            familyHistory: {
+              has: formData.medicalHistory.familyHistory.has,
+              conditions: formData.medicalHistory.familyHistory.conditions,
+            },
+            exercise: formData.medicalHistory.exercise,
+          },
+        },
+        metadata: {
+          timestamp: new Date().toISOString(),
+          assessmentId: Math.random().toString(36).substr(2, 9),
+          status: "completed",
+        },
+        description: description,
+      };
+
+      // Console log the complete form object
+      console.group("Medical Assessment Form Submission");
+      console.log("Complete Form Object:", medicalFormData);
+      console.log("\nAssessment Summary:");
+      console.log(description);
+      console.groupEnd();
+
+      // Store in localStorage
+      localStorage.setItem("medicalFormData", JSON.stringify(medicalFormData));
+
+      // Reset form or redirect
+      setCurrentStep(0);
+      setFormData({
+        personalInfo: {
+          fullName: "",
+          email: "",
+          age: "",
+          gender: "",
+          height: "",
+          weight: "",
+        },
+        lifestyle: {
+          smoking: "",
+          alcohol: "",
+        },
+        medicalHistory: {
+          conditions: [],
+          medications: {
+            taking: "",
+            list: "",
+          },
+          familyHistory: {
+            has: "",
+            conditions: [],
+          },
+          exercise: "",
+        },
+      });
+
+      // Alert user of successful submission
+      alert("Form submitted successfully! Check console for details.");
     }
   };
 
@@ -55,6 +186,11 @@ const MedicalForm = () => {
       setCurrentStep((prev) => prev - 1);
     }
   };
+
+  // Add logging when form data changes
+  useEffect(() => {
+    console.log("Form Data Updated:", formData);
+  }, [formData]);
 
   const renderStep = () => {
     switch (currentStep) {
