@@ -1,9 +1,40 @@
-import React from "react";
+// import React from "react";
+import MetaBalls from "../bits/MetaBalls";
+import BlurText from "../bits/BlurText";
+
+const handleAnimationComplete = () => {
+  console.log("Animation completed!");
+};
 
 function Login() {
   return (
-    <section className="w-full h-screen bg-blue-400 flex p-4">
-      <div className="h-full w-1/2"></div>
+    <section className="w-full h-screen bg-[#e3f2fd] flex p-4">
+      <div className="h-full w-1/2 flex flex-col">
+        <div className="w-full h-full flex justify-center items-center">
+          <BlurText
+            text="HEHEHEH"
+            delay={150}
+            animateBy="letters"
+            direction="top"
+            onAnimationComplete={handleAnimationComplete}
+            className="text-8xl mb-8"
+          />
+        </div>
+        {/* <div className="w-full h-3/4">
+          <MetaBalls
+            color="#bbdefb"
+            cursorBallColor="#bbdefb"
+            cursorBallSize={2}
+            ballCount={16}
+            animationSize={30}
+            enableMouseInteraction={true}
+            enableTransparency={true}
+            hoverSmoothness={0.08}
+            clumpFactor={1}
+            speed={0.5}
+          />
+        </div> */}
+      </div>
       <div className="h-full w-1/2 px-horizontal py-vertical bg-white/40 rounded-2xl">
         <h1 className="font-poppins text-6xl mb-bottom">Login</h1>
 
