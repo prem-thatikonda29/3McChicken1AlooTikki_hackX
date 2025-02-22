@@ -1,5 +1,4 @@
 // import React from "react";
-import MetaBalls from "../bits/MetaBalls";
 import BlurText from "../bits/BlurText";
 
 const handleAnimationComplete = () => {

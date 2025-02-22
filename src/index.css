@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
-@tailwind base;
+/* @tailwind base;
 @tailwind components;
-@tailwind utilities;
+@tailwind utilities; */
 
 @theme {
   --font-poppins: "Poppins", sans-serif;
@@ -10,4 +10,7 @@
   --spacing-horizontal: 80px;
   --spacing-vertical: 80px;
   --spacing-bottom: 60px;
+
+  --color-border: "#333";
+  --color-background: "oklch(0.984 0.019 200.873)";
 }

@@ -5,6 +5,7 @@ const MedicalForm = () => {
   const [formData, setFormData] = React.useState({
     personalInfo: {
       fullName: "",
+      email: "",
       age: "",
       gender: "",
       height: "",
@@ -29,7 +30,7 @@ const MedicalForm = () => {
   });
 
   const totalSteps = 4;
-  const progress = ((currentStep + 1) / totalSteps) * 100;
+  const progress = ((currentStep + 1) / totalSteps) * 100 - 1;
 
   const updateFormData = (category, field, value) => {
     setFormData((prev) => ({
@@ -80,6 +81,30 @@ const MedicalForm = () => {
 
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={formData.personalInfo.email}
+                  onChange={(e) =>
+                    updateFormData("personalInfo", "email", e.target.value)
+                  }
+                  placeholder="Enter your email"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-800">
+                Secondary Information
+              </h2>
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
                   Age
                 </label>
                 <input
@@ -92,49 +117,43 @@ const MedicalForm = () => {
                   placeholder="Enter your age"
                 />
               </div>
+            </div>
 
-              <div className="space-y-4">
-                <label className="block text-sm font-medium text-gray-700">
-                  Gender
-                </label>
-                <div className="space-y-2">
-                  {["male", "female", "other"].map((gender) => (
-                    <div key={gender} className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id={gender}
-                        value={gender}
-                        checked={formData.personalInfo.gender === gender}
-                        onChange={(e) =>
-                          updateFormData(
-                            "personalInfo",
-                            "gender",
-                            e.target.value
-                          )
-                        }
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <label
-                        htmlFor={gender}
-                        className="text-sm text-gray-700 capitalize"
-                      >
-                        {gender}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+            <div className="space-y-4">
+              <label className="block text-sm font-medium text-gray-700">
+                Gender
+              </label>
+              <div className="space-y-2">
+                {["male", "female", "other"].map((gender) => (
+                  <div key={gender} className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      id={gender}
+                      value={gender}
+                      checked={formData.personalInfo.gender === gender}
+                      onChange={(e) =>
+                        updateFormData("personalInfo", "gender", e.target.value)
+                      }
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <label
+                      htmlFor={gender}
+                      className="text-sm text-gray-700 capitalize"
+                    >
+                      {gender}
+                    </label>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         );
 
-      case 1:
+      case 2:
         return (
           <div className="space-y-6">
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-800">
-                Basic Information & Lifestyle
-              </h2>
+              <h2 className="text-xl font-semibold text-gray-800">Lifestyle</h2>
               <div className="space-y-4">
                 <label className="block text-sm font-medium text-gray-700">
                   Height (cm)
@@ -196,7 +215,7 @@ const MedicalForm = () => {
           </div>
         );
 
-      case 2:
+      case 3:
         return (
           <div className="space-y-6">
             <div className="space-y-4">
@@ -358,7 +377,7 @@ const MedicalForm = () => {
           </div>
         );
 
-      case 3:
+      case 4:
         return (
           <div className="space-y-6">
             <div className="space-y-4">

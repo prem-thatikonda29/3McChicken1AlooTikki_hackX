@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./components/Login";
 import Form from "./components/Form2";
+import Home from "./components/Home";
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Routes>
         <Route path="login" element={<Login />} />
         <Route path="form" element={<Form />} />
+        <Route path="home" element={<Home />} />
       </Routes>
     </Router>
   );
