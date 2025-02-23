@@ -94,7 +94,7 @@ function Landing() {
   ];
 
   const handleGetStarted = () => {
-    navigate("/questions");
+    navigate("/login");
   };
 
   return (
@@ -180,14 +180,14 @@ function Landing() {
                 transition={{ duration: 2, ease: "easeInOut" }}
               />
               {/* Pulse effect */}
-              <circle
+              {/* <circle
                 cx="50"
                 cy="50"
                 r="45"
                 stroke="#60A5FA"
                 strokeWidth="2"
                 className="animate-ping opacity-20"
-              />
+              /> */}
             </motion.svg>
           </div>
         </div>
