@@ -388,7 +388,7 @@ const DynamicQuestions = () => {
     try {
       const API_KEY = "AIzaSyCKd_RAkGIkpGUOcyk6WcR04jNXbaj-5wg";
 
-      // Get previous answers for context
+      // Get previous answers
       const previousAnswers = conversation.reduce(
         (pairs, item, index, array) => {
           if (index % 2 === 0) {
@@ -402,66 +402,31 @@ const DynamicQuestions = () => {
         []
       );
 
-      const requestBody = {
-        contents: [
-          {
-            parts: [
-              {
-                text: `As a healthcare professional, generate question ${currentQuestionNumber} of 5 for a health assessment.
+      // Create personalized initial question context
+      const getInitialQuestionContext = () => {
+        const { age, gender } = medicalData.personalInfo;
+        const conditions = medicalData.medicalHistory.conditions;
+        const { exercise, stress, sleep } = medicalData.lifestyle;
 
-                Patient Profile:
-                - Age: ${medicalData.personalInfo.age}
-                - Gender: ${medicalData.personalInfo.gender}
-                - Medical History: ${
-                  medicalData.medicalHistory.conditions.join(", ") ||
-                  "None reported"
-                }
-                - Lifestyle: ${JSON.stringify(medicalData.lifestyle)}
-                
-                Previous Q&A:
-                ${previousAnswers
-                  .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
-                  .join("\n")}
+        if (currentQuestionNumber === 1) {
+          if (conditions.length > 0) {
+            return `Ask about their ${conditions[0]} management`;
+          } else if (stress > 7) {
+            return `Ask about their high stress impact`;
+          } else if (sleep < 6) {
+            return `Ask about their sleep issues`;
+          } else if (!exercise) {
+            return `Ask about physical activity`;
+          } else if (age > 50) {
+            return `Ask about age-related health changes`;
+          } else {
+            return `Ask about general health status`;
+          }
+        }
 
-                Guidelines:
-                - Question 1: Initial general health assessment (radio)
-                - Question 2: Lifestyle habits (radio)
-                - Question 3: Detailed symptoms description (text with mic input)
-                - Question 4: Mental health and stress (radio)
-                - Question 5: Sleep and recovery (radio)
-
-                Current question number: ${currentQuestionNumber}
-
-                Return a single question in this exact JSON format:
-                For radio questions:
-                {
-                  "text": "your specific health question here",
-                  "type": "radio",
-                  "options": ["option1", "option2", "option3", "option4"]
-                }
-
-                For text questions:
-                {
-                  "text": "your specific health question here",
-                  "type": "text",
-                  "placeholder": "guide for answer format"
-                }`,
-              },
-            ],
-          },
-        ],
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_NONE",
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1000,
-        },
+        return `Follow up on: ${
+          previousAnswers[previousAnswers.length - 1]?.answer
+        }`;
       };
 
       const response = await fetch(
@@ -471,30 +436,75 @@ const DynamicQuestions = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `Generate a brief health assessment question.
+
+                User Profile:
+                Age: ${medicalData.personalInfo.age}
+                Gender: ${medicalData.personalInfo.gender}
+                Conditions: ${
+                  medicalData.medicalHistory.conditions.join(", ") || "None"
+                }
+                Lifestyle: ${JSON.stringify(medicalData.lifestyle)}
+                
+                Context: ${getInitialQuestionContext()}
+                Question Number: ${currentQuestionNumber}/5
+                
+                Guidelines:
+                - Keep questions short and direct
+                - Focus on risk assessment
+                - Consider user profile
+                - Be conversational
+                
+                Question Focus:
+                ${
+                  currentQuestionNumber === 1
+                    ? "Primary health concern"
+                    : currentQuestionNumber === 2
+                    ? "Lifestyle impact"
+                    : currentQuestionNumber === 3
+                    ? "Specific symptoms"
+                    : currentQuestionNumber === 4
+                    ? "Risk factors"
+                    : "Prevention"
+                }
+
+                Return JSON:
+                {
+                  "text": "brief question here",
+                  "type": "${currentQuestionNumber === 3 ? "text" : "radio"}",
+                  ${
+                    currentQuestionNumber === 3
+                      ? '"placeholder": "brief guide..."'
+                      : '"options": ["option1", "option2", "option3", "option4"]'
+                  }
+                }`,
+                  },
+                ],
+              },
+            ],
+          }),
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error Details:", errorData);
-        throw new Error(
-          `API request failed: ${response.status} - ${JSON.stringify(
-            errorData
-          )}`
-        );
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log("API Response:", data);
-
       const text = data.candidates[0].content.parts[0].text;
-      console.log("Generated text:", text);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
 
-      const questionData = JSON.parse(text);
-      console.log("Parsed question data:", questionData);
+      if (!jsonMatch) {
+        throw new Error("No valid JSON found in response");
+      }
 
-      // Validate the response format
+      const questionData = JSON.parse(jsonMatch[0]);
+
       if (
         !questionData.text ||
         !questionData.type ||
@@ -505,66 +515,43 @@ const DynamicQuestions = () => {
         throw new Error("Invalid question format");
       }
 
-      // If API fails, use these fallback questions
-      const fallbackQuestions = {
-        1: {
-          text: "How would you rate your overall health at the moment?",
-          type: "radio",
-          options: [
-            "Excellent - Feeling very healthy",
-            "Good - Generally healthy with minor issues",
-            "Fair - Have some health concerns",
-            "Poor - Experiencing significant health issues",
-          ],
-        },
-        2: {
-          text: "How would you describe your current lifestyle habits?",
-          type: "radio",
-          options: [
-            "Very healthy - Regular exercise and balanced diet",
-            "Moderately healthy - Some exercise and mostly good diet",
-            "Somewhat unhealthy - Limited exercise and irregular diet",
-            "Unhealthy - No exercise and poor diet",
-          ],
-        },
-        3: {
-          text: "Please describe any specific health symptoms or concerns you're experiencing. Include duration, severity, and frequency.",
-          type: "text",
-          placeholder:
-            "Example: I've been experiencing mild headaches every morning for the past 2 weeks...",
-        },
-        4: {
-          text: "How would you rate your current stress and anxiety levels?",
-          type: "radio",
-          options: [
-            "Minimal - Rarely feel stressed",
-            "Mild - Occasionally feel stressed",
-            "Moderate - Frequently feel stressed",
-            "Severe - Constantly feel stressed",
-          ],
-        },
-        5: {
-          text: "How would you describe your sleep quality and recovery?",
-          type: "radio",
-          options: [
-            "Excellent - Sleep well and wake refreshed",
-            "Good - Generally sleep well with occasional issues",
-            "Fair - Regular sleep disruptions",
-            "Poor - Significant sleep problems",
-          ],
-        },
-      };
-
-      // Set the current question
-      const finalQuestion =
-        questionData || fallbackQuestions[currentQuestionNumber];
-      setCurrentQuestion(finalQuestion);
-      setPreviousQuestions((prev) => new Set([...prev, finalQuestion.text]));
+      setCurrentQuestion(questionData);
+      setPreviousQuestions((prev) => new Set([...prev, questionData.text]));
       setUserResponse("");
-      console.log("Question set successfully:", finalQuestion);
     } catch (err) {
       console.error("Error generating question:", err);
-      fallbackToDefaultQuestion();
+      // Generate a simple context-aware question
+      const getBasicQuestion = () => {
+        const conditions = medicalData.medicalHistory.conditions;
+        if (currentQuestionNumber === 1 && conditions.length > 0) {
+          return {
+            text: `How is your ${conditions[0]} affecting you lately?`,
+            options: [
+              "Well managed",
+              "Some challenges",
+              "Needs attention",
+              "Serious concerns",
+            ],
+          };
+        }
+        return {
+          text: "How have you been feeling recently?",
+          options: ["Very well", "Generally good", "Some concerns", "Not well"],
+        };
+      };
+
+      const basicQuestion = {
+        ...getBasicQuestion(),
+        type: currentQuestionNumber === 3 ? "text" : "radio",
+        ...(currentQuestionNumber === 3 && {
+          text: "What symptoms are you experiencing?",
+          placeholder: "Describe your main symptoms...",
+        }),
+      };
+
+      setCurrentQuestion(basicQuestion);
+      setPreviousQuestions((prev) => new Set([...prev, basicQuestion.text]));
+      setUserResponse("");
     } finally {
       setIsLoadingQuestion(false);
     }
@@ -701,106 +688,97 @@ const DynamicQuestions = () => {
         return pairs;
       }, []);
 
-      const requestBody = {
-        contents: [
-          {
-            parts: [
-              {
-                text: `Generate a health assessment report based on these responses:
-              
-              User Profile:
-              - Age: ${medicalData.personalInfo.age}
-              - Gender: ${medicalData.personalInfo.gender}
-              - Medical History: ${
-                medicalData.medicalHistory.conditions.join(", ") || "None"
-              }
-              - Lifestyle: ${JSON.stringify(medicalData.lifestyle)}
-
-              Assessment Responses:
-              ${allQA
-                .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
-                .join("\n\n")}
-
-              Generate a health assessment report in this exact JSON format (no markdown, no backticks):
-              {
-                "riskScore": 50,
-                "summary": "brief overview here",
-                "healthMetrics": {
-                  "diet": 5,
-                  "exercise": 5,
-                  "sleep": 5,
-                  "stress": 5,
-                  "lifestyle": 5
-                },
-                "potentialConditions": [
-                  {
-                    "condition": "condition name",
-                    "probability": "Low/Medium/High",
-                    "summary": "brief explanation",
-                    "riskFactors": ["factor1", "factor2"],
-                    "preventiveMeasures": ["measure1", "measure2"]
-                  }
-                ],
-                "recommendations": {
-                  "immediate": [
-                    {
-                      "action": "action item",
-                      "details": "action details",
-                      "priority": "High/Medium/Low",
-                      "timeframe": "timeframe"
-                    }
-                  ],
-                  "lifestyle": {
-                    "diet": [{"recommendation": "diet rec", "specifics": ["detail1", "detail2"]}],
-                    "exercise": [{"recommendation": "exercise rec", "specifics": ["detail1", "detail2"]}],
-                    "sleep": [{"recommendation": "sleep rec", "specifics": ["detail1", "detail2"]}],
-                    "stress": [{"recommendation": "stress rec", "specifics": ["detail1", "detail2"]}]
-                  }
-                }
-              }`,
-              },
-            ],
-          },
-        ],
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_NONE",
-          },
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1000,
-        },
-      };
-
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `Generate a health risk assessment report in JSON format (no markdown, no backticks).
+
+                User Profile:
+                Age: ${medicalData.personalInfo.age}
+                Gender: ${medicalData.personalInfo.gender}
+                Medical History: ${
+                  medicalData.medicalHistory.conditions.join(", ") || "None"
+                }
+                Lifestyle: ${JSON.stringify(medicalData.lifestyle)}
+
+                Assessment Responses:
+                ${allQA
+                  .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
+                  .join("\n")}
+
+                Return a JSON object with this exact structure:
+                {
+                  "riskScore": <number 1-100>,
+                  "summary": "<brief health status>",
+                  "healthMetrics": {
+                    "diet": <1-10>,
+                    "exercise": <1-10>,
+                    "sleep": <1-10>,
+                    "stress": <1-10>,
+                    "lifestyle": <1-10>
+                  },
+                  "potentialConditions": [
+                    {
+                      "condition": "<name>",
+                      "probability": "Low/Medium/High",
+                      "summary": "<brief explanation>",
+                      "riskFactors": ["factor1", "factor2"],
+                      "preventiveMeasures": ["measure1", "measure2"]
+                    }
+                  ],
+                  "recommendations": {
+                    "immediate": [
+                      {
+                        "action": "<action>",
+                        "priority": "High/Medium/Low",
+                        "timeframe": "<timeframe>"
+                      }
+                    ],
+                    "lifestyle": {
+                      "diet": ["recommendation1", "recommendation2"],
+                      "exercise": ["recommendation1", "recommendation2"],
+                      "sleep": ["recommendation1", "recommendation2"],
+                      "stress": ["recommendation1", "recommendation2"]
+                    }
+                  }
+                }`,
+                  },
+                ],
+              },
+            ],
+            safetySettings: [
+              {
+                category: "HARM_CATEGORY_HARASSMENT",
+                threshold: "BLOCK_NONE",
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 1000,
+            },
+          }),
         }
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error Details:", errorData);
-        throw new Error(
-          `API request failed: ${response.status} - ${JSON.stringify(
-            errorData
-          )}`
-        );
+        throw new Error(`API request failed: ${response.status}`);
       }
 
       const data = await response.json();
       console.log("API Response:", data);
 
-      // Extract the text from the response
+      // Extract the text and clean it up
       const text = data.candidates[0].content.parts[0].text;
-      console.log("Generated text:", text);
+      console.log("Raw text:", text);
 
       // Find the JSON object in the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -808,11 +786,26 @@ const DynamicQuestions = () => {
         throw new Error("No valid JSON found in response");
       }
 
-      // Parse the JSON
-      const reportData = JSON.parse(jsonMatch[0]);
+      // Clean the JSON string and parse it
+      const cleanJson = jsonMatch[0]
+        .replace(/```json\s*|\s*```/g, "") // Remove markdown code blocks
+        .replace(/\\"/g, '"') // Fix escaped quotes
+        .trim();
+
+      console.log("Cleaned JSON string:", cleanJson);
+
+      const reportData = JSON.parse(cleanJson);
       console.log("Parsed report data:", reportData);
 
-      // Create complete assessment object
+      // Validate the report structure
+      if (
+        !reportData.riskScore ||
+        !reportData.summary ||
+        !reportData.healthMetrics
+      ) {
+        throw new Error("Invalid report format");
+      }
+
       const completeAssessment = {
         formData: {
           userProfile: {
@@ -840,8 +833,6 @@ const DynamicQuestions = () => {
         "completeHealthAssessment",
         JSON.stringify(completeAssessment)
       );
-
-      console.log("Complete Health Assessment:", completeAssessment);
 
       setAssessmentReport(reportData);
       return reportData;
@@ -1105,11 +1096,100 @@ const DynamicQuestions = () => {
       },
     };
 
+    const renderRecommendations = () => {
+      if (!assessmentReport?.recommendations) return null;
+
+      const { immediate = [], lifestyle = {} } =
+        assessmentReport.recommendations;
+
+      return (
+        <div className="space-y-6">
+          {/* Immediate Actions */}
+          {immediate.length > 0 && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Priority Actions
+              </h3>
+              <div className="space-y-4">
+                {immediate.map((action, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-lg ${
+                      action.priority === "High"
+                        ? "bg-red-50"
+                        : action.priority === "Medium"
+                        ? "bg-yellow-50"
+                        : "bg-green-50"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-800">
+                        {action.action}
+                      </span>
+                      <span
+                        className={`text-sm ${
+                          action.priority === "High"
+                            ? "text-red-600"
+                            : action.priority === "Medium"
+                            ? "text-yellow-600"
+                            : "text-green-600"
+                        }`}
+                      >
+                        {action.priority} Priority
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Timeframe: {action.timeframe}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Lifestyle Recommendations */}
+          {Object.keys(lifestyle).length > 0 && (
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Lifestyle Recommendations
+              </h3>
+              {Object.entries(lifestyle).map(
+                ([category, recommendations]) =>
+                  recommendations &&
+                  recommendations.length > 0 && (
+                    <div key={category} className="mb-4 last:mb-0">
+                      <h4 className="font-medium text-gray-800 capitalize mb-2">
+                        {category}
+                      </h4>
+                      <ul className="list-disc pl-5 space-y-1">
+                        {recommendations.map((rec, idx) => (
+                          <li key={idx} className="text-gray-600">
+                            {rec}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
     return (
       <div className="min-h-screen bg-gray-50 py-12">
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="max-w-6xl mx-auto px-4">
+          {/* Header Section */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Health Risk Assessment Report
+            </h2>
+            <p className="text-gray-600">{assessmentReport.summary}</p>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Risk Score and Charts Section */}
+            {/* Risk Score and Vitals Section */}
             <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Risk Score Doughnut Chart */}
               <div className="bg-white rounded-xl shadow-lg p-6">
@@ -1123,61 +1203,96 @@ const DynamicQuestions = () => {
                       cutout: "70%",
                       plugins: {
                         legend: { display: false },
+                        tooltip: {
+                          callbacks: {
+                            label: function (context) {
+                              return `Risk Level: ${context.raw}%`;
+                            },
+                          },
+                        },
                       },
                     }}
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <div className="text-3xl font-bold text-gray-800">
+                      <div
+                        className={`text-4xl font-bold ${
+                          assessmentReport.riskScore > 70
+                            ? "text-red-600"
+                            : assessmentReport.riskScore > 40
+                            ? "text-yellow-600"
+                            : "text-green-600"
+                        }`}
+                      >
                         {assessmentReport.riskScore}%
                       </div>
                       <div className="text-sm text-gray-500">Risk Score</div>
                     </div>
                   </div>
                 </div>
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-green-600">Low Risk (0-40%)</span>
+                    <span className="text-yellow-600">
+                      Medium Risk (41-70%)
+                    </span>
+                    <span className="text-red-600">High Risk (71-100%)</span>
+                  </div>
+                </div>
               </div>
 
-              {/* Health Metrics Bar Chart */}
+              {/* Health Metrics Detail */}
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  Health Metrics
+                  Health Metrics Analysis
                 </h3>
                 <div className="h-64">
                   <Bar
                     data={healthMetricsData}
-                    options={healthMetricsOptions}
+                    options={{
+                      ...healthMetricsOptions,
+                      plugins: {
+                        ...healthMetricsOptions.plugins,
+                        tooltip: {
+                          callbacks: {
+                            label: function (context) {
+                              const labels = {
+                                diet: "Dietary Health",
+                                exercise: "Physical Activity",
+                                sleep: "Sleep Quality",
+                                stress: "Stress Management",
+                              };
+                              return `${labels[context.label]}: ${
+                                context.raw
+                              }/10`;
+                            },
+                          },
+                        },
+                      },
+                    }}
                   />
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-4">
-                  {Object.entries(healthMetrics).map(([metric, score]) => (
-                    <div key={metric} className="text-center">
-                      <div className="text-sm text-gray-500 capitalize">
-                        {metric}
-                      </div>
-                      <div className="text-lg font-semibold text-gray-800">
-                        {score}/10
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
             </div>
 
-            {/* Health Conditions */}
+            {/* Detailed Health Analysis */}
             <div className="lg:col-span-8">
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  Key Health Insights
+                  Health Risk Analysis
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   {potentialConditions.map((condition, index) => (
-                    <div key={index} className="p-4 bg-gray-50 rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
+                    <div
+                      key={index}
+                      className="border-b border-gray-200 pb-4 last:border-0"
+                    >
+                      <div className="flex items-center justify-between mb-3">
                         <h4 className="text-lg font-medium text-gray-800">
                           {condition.condition}
                         </h4>
                         <span
-                          className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          className={`px-4 py-1 rounded-full text-sm font-medium ${
                             condition.probability === "High"
                               ? "bg-red-100 text-red-800"
                               : condition.probability === "Medium"
@@ -1188,20 +1303,34 @@ const DynamicQuestions = () => {
                           {condition.probability} Risk
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-2">{condition.summary}</p>
-                      <div className="mt-2">
-                        <h5 className="font-medium text-gray-700 mb-1">
-                          Key Prevention Steps:
-                        </h5>
-                        <ul className="list-disc pl-5 space-y-1">
-                          {condition.preventiveMeasures
-                            .slice(0, 2)
-                            .map((measure, idx) => (
+                      <p className="text-gray-600 mb-3">{condition.summary}</p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <h5 className="font-medium text-gray-700 mb-2">
+                            Risk Factors:
+                          </h5>
+                          <ul className="list-disc pl-5 space-y-1">
+                            {condition.riskFactors.map((factor, idx) => (
                               <li key={idx} className="text-gray-600">
-                                {measure}
+                                {factor}
                               </li>
                             ))}
-                        </ul>
+                          </ul>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-gray-700 mb-2">
+                            Prevention Steps:
+                          </h5>
+                          <ul className="list-disc pl-5 space-y-1">
+                            {condition.preventiveMeasures.map(
+                              (measure, idx) => (
+                                <li key={idx} className="text-gray-600">
+                                  {measure}
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1209,129 +1338,99 @@ const DynamicQuestions = () => {
               </div>
             </div>
 
-            {/* Action Plan */}
-            <div className="lg:col-span-4">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  Quick Action Plan
-                </h3>
-                <div className="space-y-4">
-                  {/* Immediate Actions */}
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <h4 className="font-medium text-blue-800 mb-2">
-                      Priority Actions
-                    </h4>
-                    <ul className="space-y-2">
-                      {recommendations.immediate
-                        .slice(0, 3)
-                        .map((action, idx) => (
-                          <li key={idx} className="flex items-start">
-                            <span className="mr-2">•</span>
-                            <span className="text-gray-700">
-                              {action.action}
-                            </span>
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-
-                  {/* Lifestyle Tips */}
-                  <div className="p-4 bg-green-50 rounded-lg">
-                    <h4 className="font-medium text-green-800 mb-2">
-                      Lifestyle Tips
-                    </h4>
-                    <ul className="space-y-2">
-                      {Object.entries(recommendations.lifestyle)
-                        .slice(0, 2)
-                        .map(([category, tips]) => (
-                          <li key={category} className="text-gray-700">
-                            <span className="font-medium capitalize">
-                              {category}:
-                            </span>{" "}
-                            {tips[0].recommendation}
-                          </li>
-                        ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
+            {/* Recommendations and Action Plan */}
+            <div className="lg:col-span-4 space-y-6">
+              {renderRecommendations()}
             </div>
           </div>
 
-          {/* Add Underwriter Insights button */}
-          <div className="mt-8 space-y-4">
+          {/* Underwriter Section */}
+          <div className="mt-8">
             <button
               onClick={() => setShowUnderwriterButtons(!showUnderwriterButtons)}
               className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg 
                 hover:bg-blue-700 transition-colors duration-200"
             >
-              Underwriter Insights
+              {showUnderwriterButtons
+                ? "Hide Underwriter Controls"
+                : "Show Underwriter Controls"}
             </button>
 
-            {/* Underwriter action buttons */}
             {showUnderwriterButtons && (
-              <div className="flex gap-4 mt-4">
-                <button
-                  onClick={() => handleUnderwriterAction("pass")}
-                  className="flex-1 bg-green-500 text-white px-6 py-3 rounded-lg 
-                    hover:bg-green-600 transition-colors duration-200"
-                >
-                  Pass
-                </button>
-                <button
-                  onClick={() => handleUnderwriterAction("review")}
-                  className="flex-1 bg-yellow-500 text-white px-6 py-3 rounded-lg 
-                    hover:bg-yellow-600 transition-colors duration-200"
-                >
-                  Review
-                </button>
-                <button
-                  onClick={() => handleUnderwriterAction("cancel")}
-                  className="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg 
-                    hover:bg-red-600 transition-colors duration-200"
-                >
-                  Cancel
-                </button>
+              <div className="mt-6 space-y-6">
+                {/* Underwriter Summary */}
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                    Underwriter's Analysis
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">
+                        Overall Risk Level
+                      </div>
+                      <div
+                        className={`text-xl font-semibold ${
+                          assessmentReport.riskScore > 70
+                            ? "text-red-600"
+                            : assessmentReport.riskScore > 40
+                            ? "text-yellow-600"
+                            : "text-green-600"
+                        }`}
+                      >
+                        {assessmentReport.riskScore}% -{" "}
+                        {assessmentReport.riskScore > 70
+                          ? "High Risk"
+                          : assessmentReport.riskScore > 40
+                          ? "Medium Risk"
+                          : "Low Risk"}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">
+                        Risk Factors Identified
+                      </div>
+                      <div className="text-xl font-semibold text-gray-800">
+                        {potentialConditions.length} Conditions
+                      </div>
+                    </div>
+                    <div className="p-4 bg-gray-50 rounded-lg">
+                      <div className="text-sm text-gray-500 mb-1">
+                        Required Actions
+                      </div>
+                      <div className="text-xl font-semibold text-gray-800">
+                        {recommendations.immediate.length} Items
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => handleUnderwriterAction("pass")}
+                    className="flex-1 bg-green-500 text-white px-6 py-3 rounded-lg 
+                      hover:bg-green-600 transition-colors duration-200"
+                  >
+                    Approve Application
+                  </button>
+                  <button
+                    onClick={() => handleUnderwriterAction("review")}
+                    className="flex-1 bg-yellow-500 text-white px-6 py-3 rounded-lg 
+                      hover:bg-yellow-600 transition-colors duration-200"
+                  >
+                    Request Additional Review
+                  </button>
+                  <button
+                    onClick={() => handleUnderwriterAction("cancel")}
+                    className="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg 
+                      hover:bg-red-600 transition-colors duration-200"
+                  >
+                    Decline Application
+                  </button>
+                </div>
               </div>
             )}
           </div>
-
-          {/* Add a summary of the underwriter's view */}
-          {showUnderwriterButtons && (
-            <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                Underwriter's Summary
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Risk Score</span>
-                  <span
-                    className={`font-semibold ${
-                      assessmentReport.riskScore > 70
-                        ? "text-red-600"
-                        : assessmentReport.riskScore > 50
-                        ? "text-yellow-600"
-                        : "text-green-600"
-                    }`}
-                  >
-                    {assessmentReport.riskScore}%
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Key Risk Factors</span>
-                  <span className="font-semibold text-gray-800">
-                    {assessmentReport.potentialConditions.length}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Recommended Actions</span>
-                  <span className="font-semibold text-gray-800">
-                    {assessmentReport.recommendations.immediate.length}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );

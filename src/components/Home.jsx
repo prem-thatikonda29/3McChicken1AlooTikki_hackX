@@ -27,7 +27,7 @@ function Home() {
             <div className="w-1/2 h-full rounded-md flex flex-col gap-4">
               <div className="w-full h-3/5 rounded-md shadow-lg shadow-gray-700/50 bg-white/10 backdrop-blur-lg border border-white/20">
                 {/* <h1>Nearby Hospitals</h1> */}
-                <NearbyHospitalsOSM/>
+                {/* <NearbyHospitalsOSM/> */}
               </div>
               <div className="w-full h-2/5 rounded-md shadow-lg shadow-gray-700/50 bg-white/10 backdrop-blur-lg border border-white/20">
                 <h1>button to download reports as a pdf</h1>

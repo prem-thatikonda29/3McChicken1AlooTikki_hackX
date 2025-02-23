@@ -13,7 +13,7 @@ function Login() {
       <div className="h-full w-1/2 flex flex-col">
         <div className="w-full h-full flex justify-center items-center">
           <BlurText
-            text="HEHEHEH"
+            text="Vitalis"
             delay={150}
             animateBy="letters"
             direction="top"
