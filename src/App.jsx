@@ -4,19 +4,21 @@ import Login from "./components/Login";
 import Home from "./components/Home";
 import Landing from "./components/Landing";
 import DynamicQuestions from "./components/DynamicQuestions2";
+import NearbyHospitalsOSM from "./components/Map";
 
 function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/login" element={<Login />} />
-        {/* <Route path="/form" element={<Form />} /> */}
-        <Route path="/questions" element={<DynamicQuestions />} />
-        <Route path="/home" element={<Home />} />
-      </Routes>
-    </Router>
-  );
+    return (
+        <Router>
+            <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                {/* <Route path="/form" element={<Form />} /> */}
+                <Route path="/questions" element={<DynamicQuestions />} />
+                {/* <Route path="/home" element={<Home />} /> */}
+                <Route path="/map" element={<NearbyHospitalsOSM />} />
+            </Routes>
+        </Router>
+    );
 }
 
 export default App;
