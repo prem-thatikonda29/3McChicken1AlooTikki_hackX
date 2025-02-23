@@ -3,7 +3,7 @@ import Login from "./components/Login";
 // import Form from "./components/Form2";
 import Home from "./components/Home";
 import Landing from "./components/Landing";
-import DynamicQuestions from "./components/DyanamicQuestions";
+import DynamicQuestions from "./components/DynamicQuestions";
 
 function App() {
   return (
