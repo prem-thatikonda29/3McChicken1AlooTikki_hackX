@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Mic } from "lucide-react";
+import NearbyHospitalsOSM from "./Map";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -14,9 +15,9 @@ import {
 import { Doughnut, Bar } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import { WhatsappShareButton } from 'react-share';
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { WhatsappShareButton } from "react-share";
 
 // Register ChartJS components
 ChartJS.register(
@@ -162,9 +163,9 @@ const DynamicQuestions = () => {
   const [showUnderwriterModal, setShowUnderwriterModal] = useState(false);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [showEmergencyButton, setShowEmergencyButton] = useState(false);
-  const [localEmergencyContact, setLocalEmergencyContact] = useState('');
+  const [localEmergencyContact, setLocalEmergencyContact] = useState("");
   const [localIsValidContact, setLocalIsValidContact] = useState(false);
-  const [emergencyContact, setEmergencyContact] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState("");
 
   const recognitionRef = useRef(null);
   const totalQuestions = 5;
@@ -179,7 +180,7 @@ const DynamicQuestions = () => {
     transcript,
     error: speechError,
     startListening: startVoice,
-    stopListening: stopVoice
+    stopListening: stopVoice,
   } = useSpeechToText({
     continuous: false,
     interimResults: true,
@@ -190,7 +191,7 @@ const DynamicQuestions = () => {
   useEffect(() => {
     if (transcript) {
       setUserResponse((prev) => {
-        const newResponse = prev.trim() + ' ' + transcript.trim();
+        const newResponse = prev.trim() + " " + transcript.trim();
         return newResponse.trim();
       });
     }
@@ -511,14 +512,15 @@ const DynamicQuestions = () => {
           className="w-full p-4 pr-12 border-2 border-gray-200 rounded-lg focus:border-blue-500 
             focus:ring-2 focus:ring-blue-100 transition-all duration-200 min-h-[100px] resize-none"
           maxLength={500}
-          style={{ paddingRight: '3rem' }}
+          style={{ paddingRight: "3rem" }}
         />
         <button
           onClick={voiceListening ? stopVoice : startVoice}
           className={`absolute right-3 bottom-3 p-2 rounded-full transition-colors duration-200 
-            ${voiceListening
-              ? "bg-red-500 text-white"
-              : "bg-gray-200 hover:bg-gray-300 text-gray-600"
+            ${
+              voiceListening
+                ? "bg-red-500 text-white"
+                : "bg-gray-200 hover:bg-gray-300 text-gray-600"
             } z-10`}
           type="button"
         >
@@ -527,11 +529,11 @@ const DynamicQuestions = () => {
       </div>
       <div className="flex justify-between text-sm text-gray-500">
         <span>
-          {voiceListening 
-            ? "Listening... Speak now" 
-            : speechError 
-              ? `Error: ${speechError}` 
-              : "Click the mic to speak"}
+          {voiceListening
+            ? "Listening... Speak now"
+            : speechError
+            ? `Error: ${speechError}`
+            : "Click the mic to speak"}
         </span>
         <span>{userResponse.length}/500 characters</span>
       </div>
@@ -559,7 +561,11 @@ const DynamicQuestions = () => {
           <button
             onClick={voiceListening ? stopVoice : startVoice}
             className={`w-full py-3 px-4 rounded-xl font-poppins font-medium transition-all duration-300 flex items-center justify-center space-x-2
-              ${voiceListening ? "bg-red-500 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+              ${
+                voiceListening
+                  ? "bg-red-500 text-white"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              }`}
           >
             <svg
               className="w-5 h-5"
@@ -574,7 +580,9 @@ const DynamicQuestions = () => {
                 d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"
               />
             </svg>
-            <span>{voiceListening ? "Stop Recording" : "Start Voice Input"}</span>
+            <span>
+              {voiceListening ? "Stop Recording" : "Start Voice Input"}
+            </span>
           </button>
         </div>
       );
@@ -639,16 +647,22 @@ const DynamicQuestions = () => {
 • Stress: ${report.healthMetrics.stress}/10
 
 *⚠️ Potential Health Conditions:*
-${report.potentialConditions.map(condition => `
+${report.potentialConditions
+  .map(
+    (condition) => `
 • ${condition.condition}
   - Risk Level: ${condition.probability}
-  - Risk Factors: ${condition.riskFactors.join(', ')}`).join('\n')}
+  - Risk Factors: ${condition.riskFactors.join(", ")}`
+  )
+  .join("\n")}
 
 *🔴 IMMEDIATE ACTIONS REQUIRED:*
-${report.recommendations.immediate.map(rec => `• ${rec.action} (${rec.priority})`).join('\n')}
+${report.recommendations.immediate
+  .map((rec) => `• ${rec.action} (${rec.priority})`)
+  .join("\n")}
 
 *Key Findings:*
-${report.keyFindings.map(finding => `• ${finding}`).join('\n')}
+${report.keyFindings.map((finding) => `• ${finding}`).join("\n")}
 
 ⚕️ *MEDICAL ATTENTION RECOMMENDED*
 Please consult a healthcare provider immediately.
@@ -668,30 +682,45 @@ Time: ${new Date().toLocaleString()}`;
     let riskScore = 0;
     let riskFactors = 0;
 
-    responses.forEach(response => {
+    responses.forEach((response) => {
       const answer = response.content.toLowerCase();
-      
+
       // Check for high-risk keywords
       const highRiskKeywords = [
-        'severe', 'extreme', 'constant', 'always', 'unbearable',
-        'chest pain', 'difficulty breathing', 'unconscious',
-        'suicide', 'heart', 'emergency', 'critical'
+        "severe",
+        "extreme",
+        "constant",
+        "always",
+        "unbearable",
+        "chest pain",
+        "difficulty breathing",
+        "unconscious",
+        "suicide",
+        "heart",
+        "emergency",
+        "critical",
       ];
 
       const moderateRiskKeywords = [
-        'often', 'frequent', 'moderate', 'sometimes',
-        'pain', 'stress', 'anxiety', 'worried'
+        "often",
+        "frequent",
+        "moderate",
+        "sometimes",
+        "pain",
+        "stress",
+        "anxiety",
+        "worried",
       ];
 
       // Increase risk score based on keywords
-      highRiskKeywords.forEach(keyword => {
+      highRiskKeywords.forEach((keyword) => {
         if (answer.includes(keyword)) {
           riskScore += 15;
           riskFactors++;
         }
       });
 
-      moderateRiskKeywords.forEach(keyword => {
+      moderateRiskKeywords.forEach((keyword) => {
         if (answer.includes(keyword)) {
           riskScore += 8;
           riskFactors++;
@@ -708,8 +737,10 @@ Time: ${new Date().toLocaleString()}`;
     setIsGeneratingReport(true);
     try {
       // Get all user responses
-      const userResponses = conversation.filter(item => item.type === 'answer');
-      
+      const userResponses = conversation.filter(
+        (item) => item.type === "answer"
+      );
+
       // Calculate risk score based on responses
       const calculatedRiskScore = calculateRiskScore(userResponses);
 
@@ -861,7 +892,7 @@ Time: ${new Date().toLocaleString()}`;
       // Update the risk score in the report data
       const updatedReportData = {
         ...reportData,
-        riskScore: Math.max(calculatedRiskScore, reportData.riskScore || 0)
+        riskScore: Math.max(calculatedRiskScore, reportData.riskScore || 0),
       };
 
       // Show emergency button for high risk
@@ -985,7 +1016,7 @@ Time: ${new Date().toLocaleString()}`;
         setCurrentQuestionNumber((prev) => prev + 1);
         setCurrentQuestion(null);
         setIsLoadingQuestion(true);
-        
+
         // Wait before generating next question
         await new Promise((resolve) => setTimeout(resolve, 1500));
         await generateNextQuestion();
@@ -995,7 +1026,9 @@ Time: ${new Date().toLocaleString()}`;
     } catch (error) {
       console.error("Error in handleSubmitResponse:", error);
       setProcessingResponse(false);
-      toast.error("An error occurred while processing your response. Please try again.");
+      toast.error(
+        "An error occurred while processing your response. Please try again."
+      );
     }
   };
 
@@ -1013,13 +1046,22 @@ Time: ${new Date().toLocaleString()}`;
 
     switch (action) {
       case "pass":
-        toast.success("Application Passed: Risk assessment approved by underwriter", toastConfig);
+        toast.success(
+          "Application Passed: Risk assessment approved by underwriter",
+          toastConfig
+        );
         break;
       case "review":
-        toast.warning("Application Under Review: Additional verification required", toastConfig);
+        toast.warning(
+          "Application Under Review: Additional verification required",
+          toastConfig
+        );
         break;
       case "cancel":
-        toast.error("Application Cancelled: Risk assessment declined by underwriter", toastConfig);
+        toast.error(
+          "Application Cancelled: Risk assessment declined by underwriter",
+          toastConfig
+        );
         break;
       default:
         toast.info("Invalid action", toastConfig);
@@ -1085,7 +1127,7 @@ Time: ${new Date().toLocaleString()}`;
   // Add this new component for the Underwriter Modal
   const UnderwriterModal = () => (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
@@ -1096,19 +1138,19 @@ Time: ${new Date().toLocaleString()}`;
         </h3>
         <div className="space-y-4">
           <button
-            onClick={() => handleUnderwriterAction('pass')}
+            onClick={() => handleUnderwriterAction("pass")}
             className="w-full py-3 px-6 bg-green-500 text-white rounded-xl font-poppins hover:bg-green-600 transition-colors"
           >
             Accept
           </button>
           <button
-            onClick={() => handleUnderwriterAction('review')}
+            onClick={() => handleUnderwriterAction("review")}
             className="w-full py-3 px-6 bg-yellow-500 text-white rounded-xl font-poppins hover:bg-yellow-600 transition-colors"
           >
             Review
           </button>
           <button
-            onClick={() => handleUnderwriterAction('cancel')}
+            onClick={() => handleUnderwriterAction("cancel")}
             className="w-full py-3 px-6 bg-red-500 text-white rounded-xl font-poppins hover:bg-red-600 transition-colors"
           >
             Cancel
@@ -1133,9 +1175,7 @@ Time: ${new Date().toLocaleString()}`;
         className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8 text-center"
       >
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#bbdefb] mx-auto mb-4"></div>
-        <p className="text-gray-600 font-poppins text-lg">
-          {message}
-        </p>
+        <p className="text-gray-600 font-poppins text-lg">{message}</p>
         <p className="text-gray-500 font-poppins text-sm mt-2">
           Please wait...
         </p>
@@ -1146,11 +1186,11 @@ Time: ${new Date().toLocaleString()}`;
   // Separate EmergencyContactModal into its own component with local state
   const EmergencyContactModal = () => {
     // Use local state for the form
-    const [localContact, setLocalContact] = useState('');
+    const [localContact, setLocalContact] = useState("");
     const [isValidContact, setIsValidContact] = useState(false);
 
     const handleNumberChange = (e) => {
-      const number = e.target.value.replace(/\D/g, '').slice(0, 10);
+      const number = e.target.value.replace(/\D/g, "").slice(0, 10);
       setLocalContact(number);
       setIsValidContact(number.length === 10);
     };
@@ -1158,8 +1198,10 @@ Time: ${new Date().toLocaleString()}`;
     const handleSubmit = () => {
       if (isValidContact) {
         const formattedReport = formatReportForWhatsApp(assessmentReport);
-        const whatsappUrl = `https://wa.me/91${localContact}?text=${encodeURIComponent(formattedReport)}`;
-        window.open(whatsappUrl, '_blank');
+        const whatsappUrl = `https://wa.me/91${localContact}?text=${encodeURIComponent(
+          formattedReport
+        )}`;
+        window.open(whatsappUrl, "_blank");
         toast.success("Emergency report shared via WhatsApp");
         setShowEmergencyModal(false);
       } else {
@@ -1177,8 +1219,18 @@ Time: ${new Date().toLocaleString()}`;
         >
           <div className="flex items-center mb-6">
             <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-              <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="w-6 h-6 text-red-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
             </div>
             <h3 className="text-2xl font-poppins font-semibold text-red-600">
@@ -1211,9 +1263,11 @@ Time: ${new Date().toLocaleString()}`;
                 onClick={handleSubmit}
                 disabled={!isValidContact}
                 className={`flex-1 py-3 px-4 rounded-xl font-poppins font-medium transition-all duration-300 
-                  ${isValidContact
-                    ? "bg-red-500 text-white hover:bg-red-600"
-                    : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+                  ${
+                    isValidContact
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  }`}
               >
                 Share Emergency Report
               </button>
@@ -1241,9 +1295,18 @@ Time: ${new Date().toLocaleString()}`;
         transition-all duration-300 flex items-center justify-center space-x-3"
     >
       <div className="w-10 h-10 bg-red-400/20 rounded-full flex items-center justify-center">
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
         </svg>
       </div>
       <span className="text-lg">Share Emergency Report</span>
@@ -1533,8 +1596,14 @@ Time: ${new Date().toLocaleString()}`;
                       return (
                         <motion.div
                           key={index}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
+                          initial={{
+                            opacity: 0,
+                            x: -20,
+                          }}
+                          animate={{
+                            opacity: 1,
+                            x: 0,
+                          }}
                           transition={{
                             duration: 0.5,
                             delay: index * 0.1,
@@ -1646,52 +1715,57 @@ Time: ${new Date().toLocaleString()}`;
                   Health Risks
                 </h3>
                 <div className="space-y-6">
-                  {assessmentReport.potentialConditions.map((condition, idx) => (
-                    <motion.div
-                      key={idx}
-                      className="border-b border-white/20 pb-6 last:border-0"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: 0.5,
-                        delay: idx * 0.1,
-                      }}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-xl font-poppins font-medium text-gray-800">
-                          {condition.condition}
-                        </h4>
-                        <span
-                          className={`px-4 py-2 rounded-full text-sm font-poppins font-medium ${
-                            condition.probability === "High"
-                              ? "bg-red-100 text-red-800"
-                              : condition.probability === "Medium"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {condition.probability} Risk
-                        </span>
-                      </div>
-                      <p className="text-gray-600 font-poppins mb-4">
-                        {condition.summary}
-                      </p>
-                      {condition.riskFactors?.length > 0 && (
-                        <div className="mt-4">
-                          <h5 className="font-poppins font-medium text-gray-700 mb-2">
-                            Risk Factors:
-                          </h5>
-                          <ul className="list-disc pl-5 space-y-2">
-                            {condition.riskFactors.map((factor, i) => (
-                              <li key={i} className="text-gray-600 font-poppins">
-                                {factor}
-                              </li>
-                            ))}
-                          </ul>
+                  {assessmentReport.potentialConditions.map(
+                    (condition, idx) => (
+                      <motion.div
+                        key={idx}
+                        className="border-b border-white/20 pb-6 last:border-0"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.5,
+                          delay: idx * 0.1,
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-xl font-poppins font-medium text-gray-800">
+                            {condition.condition}
+                          </h4>
+                          <span
+                            className={`px-4 py-2 rounded-full text-sm font-poppins font-medium ${
+                              condition.probability === "High"
+                                ? "bg-red-100 text-red-800"
+                                : condition.probability === "Medium"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {condition.probability} Risk
+                          </span>
                         </div>
-                      )}
-                    </motion.div>
-                  ))}
+                        <p className="text-gray-600 font-poppins mb-4">
+                          {condition.summary}
+                        </p>
+                        {condition.riskFactors?.length > 0 && (
+                          <div className="mt-4">
+                            <h5 className="font-poppins font-medium text-gray-700 mb-2">
+                              Risk Factors:
+                            </h5>
+                            <ul className="list-disc pl-5 space-y-2">
+                              {condition.riskFactors.map((factor, i) => (
+                                <li
+                                  key={i}
+                                  className="text-gray-600 font-poppins"
+                                >
+                                  {factor}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </motion.div>
+                    )
+                  )}
                 </div>
               </motion.div>
             )}
@@ -1742,28 +1816,32 @@ Time: ${new Date().toLocaleString()}`;
                       Risk Indicators
                     </h4>
                     <ul className="space-y-2">
-                      {assessmentReport.riskIndicators?.map((indicator, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-center text-gray-600 font-poppins"
-                        >
-                          <span
-                            className={`w-2 h-2 rounded-full mr-3 ${
-                              indicator.level === "high"
-                                ? "bg-red-500"
-                                : indicator.level === "medium"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
-                            }`}
-                          ></span>
-                          {indicator.description}
-                        </li>
-                      ))}
+                      {assessmentReport.riskIndicators?.map(
+                        (indicator, idx) => (
+                          <li
+                            key={idx}
+                            className="flex items-center text-gray-600 font-poppins"
+                          >
+                            <span
+                              className={`w-2 h-2 rounded-full mr-3 ${
+                                indicator.level === "high"
+                                  ? "bg-red-500"
+                                  : indicator.level === "medium"
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              }`}
+                            ></span>
+                            {indicator.description}
+                          </li>
+                        )
+                      )}
                     </ul>
                   </div>
                 </div>
               </motion.div>
             )}
+
+            {NearbyHospitalsOSM && <NearbyHospitalsOSM />}
 
             {/* Emergency Button */}
             {assessmentReport.riskScore > 70 && <EmergencyButton />}
@@ -1842,7 +1920,9 @@ Time: ${new Date().toLocaleString()}`;
           <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#bbdefb] mx-auto mb-4"></div>
             <p className="text-gray-600 font-poppins text-lg">
-              {isLoadingQuestion ? "Preparing your next question..." : "Processing your response..."}
+              {isLoadingQuestion
+                ? "Preparing your next question..."
+                : "Processing your response..."}
             </p>
             <p className="text-gray-500 font-poppins text-sm mt-2">
               Please wait a moment
