@@ -13,6 +13,7 @@ import {
 } from "chart.js";
 import { Doughnut, Bar } from "react-chartjs-2";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 // Register ChartJS components
 ChartJS.register(
@@ -678,6 +679,7 @@ const DynamicQuestions = () => {
     try {
       const API_KEY = "AIzaSyCKd_RAkGIkpGUOcyk6WcR04jNXbaj-5wg";
 
+      // Format conversation for analysis
       const allQA = conversation.reduce((pairs, item, index, array) => {
         if (index % 2 === 0) {
           pairs.push({
@@ -698,8 +700,8 @@ const DynamicQuestions = () => {
               {
                 parts: [
                   {
-                    text: `Generate a health risk assessment report in JSON format (no markdown, no backticks).
-
+                    text: `Generate a comprehensive health risk assessment report based on the following user profile and responses.
+                
                 User Profile:
                 Age: ${medicalData.personalInfo.age}
                 Gender: ${medicalData.personalInfo.gender}
@@ -713,10 +715,19 @@ const DynamicQuestions = () => {
                   .map((qa) => `Q: ${qa.question}\nA: ${qa.answer}`)
                   .join("\n")}
 
-                Return a JSON object with this exact structure:
+                Analyze the responses and generate a detailed health risk assessment report.
+                Consider:
+                - Overall health risk score (1-100)
+                - Key health metrics
+                - Potential health conditions
+                - Risk factors
+                - Preventive recommendations
+                - Lifestyle suggestions
+                
+                Return in exact JSON format:
                 {
-                  "riskScore": <number 1-100>,
-                  "summary": "<brief health status>",
+                  "riskScore": <number>,
+                  "summary": "<comprehensive health status summary>",
                   "healthMetrics": {
                     "diet": <1-10>,
                     "exercise": <1-10>,
@@ -726,26 +737,33 @@ const DynamicQuestions = () => {
                   },
                   "potentialConditions": [
                     {
-                      "condition": "<name>",
+                      "condition": "<condition name>",
                       "probability": "Low/Medium/High",
-                      "summary": "<brief explanation>",
-                      "riskFactors": ["factor1", "factor2"],
-                      "preventiveMeasures": ["measure1", "measure2"]
+                      "summary": "<condition specific summary>",
+                      "riskFactors": ["<risk factor 1>", "<risk factor 2>"],
+                      "preventiveMeasures": ["<measure 1>", "<measure 2>"]
+                    }
+                  ],
+                  "keyFindings": ["<finding 1>", "<finding 2>"],
+                  "riskIndicators": [
+                    {
+                      "description": "<indicator description>",
+                      "level": "low/medium/high"
                     }
                   ],
                   "recommendations": {
                     "immediate": [
                       {
-                        "action": "<action>",
+                        "action": "<action description>",
                         "priority": "High/Medium/Low",
                         "timeframe": "<timeframe>"
                       }
                     ],
                     "lifestyle": {
-                      "diet": ["recommendation1", "recommendation2"],
-                      "exercise": ["recommendation1", "recommendation2"],
-                      "sleep": ["recommendation1", "recommendation2"],
-                      "stress": ["recommendation1", "recommendation2"]
+                      "diet": ["<diet recommendation 1>"],
+                      "exercise": ["<exercise recommendation 1>"],
+                      "sleep": ["<sleep recommendation 1>"],
+                      "stress": ["<stress recommendation 1>"]
                     }
                   }
                 }`,
@@ -776,20 +794,18 @@ const DynamicQuestions = () => {
       const data = await response.json();
       console.log("API Response:", data);
 
-      // Extract the text and clean it up
       const text = data.candidates[0].content.parts[0].text;
       console.log("Raw text:", text);
 
-      // Find the JSON object in the response
+      // Find and parse the JSON object
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         throw new Error("No valid JSON found in response");
       }
 
-      // Clean the JSON string and parse it
       const cleanJson = jsonMatch[0]
-        .replace(/```json\s*|\s*```/g, "") // Remove markdown code blocks
-        .replace(/\\"/g, '"') // Fix escaped quotes
+        .replace(/```json\s*|\s*```/g, "")
+        .replace(/\\"/g, '"')
         .trim();
 
       console.log("Cleaned JSON string:", cleanJson);
@@ -806,6 +822,7 @@ const DynamicQuestions = () => {
         throw new Error("Invalid report format");
       }
 
+      // Store complete assessment data
       const completeAssessment = {
         formData: {
           userProfile: {
@@ -825,6 +842,7 @@ const DynamicQuestions = () => {
         },
       };
 
+      // Save to localStorage for persistence
       localStorage.setItem(
         "healthAssessmentReport",
         JSON.stringify(reportData)
@@ -962,13 +980,53 @@ const DynamicQuestions = () => {
     navigate("/");
   };
 
+  // Add this function to generate insights based on responses
+  const generateUnderwriterInsights = () => {
+    const insights = {
+      riskFactors: [],
+      recommendations: [],
+      underwritingDecision: "",
+      additionalNotes: [],
+    };
+
+    // Analyze responses
+    conversation.forEach((qa, index) => {
+      if (index % 2 === 0) {
+        // Questions
+        const answer = conversation[index + 1]?.content;
+        // Add logic to analyze responses and generate insights
+        if (answer) {
+          // Example analysis based on response patterns
+          if (
+            answer.toLowerCase().includes("pain") ||
+            answer.toLowerCase().includes("severe")
+          ) {
+            insights.riskFactors.push(
+              "Reported significant pain or severe symptoms"
+            );
+          }
+          if (
+            answer.toLowerCase().includes("medication") ||
+            answer.toLowerCase().includes("treatment")
+          ) {
+            insights.additionalNotes.push("Currently under medical treatment");
+          }
+        }
+      }
+    });
+
+    return insights;
+  };
+
   // Early return for loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your health assessment...</p>
+      <div className="flex items-center justify-center min-h-screen bg-[#e3f2fd]">
+        <div className="text-center bg-white/40 backdrop-blur-lg p-8 rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#bbdefb] mx-auto mb-4"></div>
+          <p className="text-gray-600 font-poppins">
+            Loading your health assessment...
+          </p>
         </div>
       </div>
     );
@@ -977,13 +1035,15 @@ const DynamicQuestions = () => {
   // Early return for error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white p-8 rounded-lg shadow-md max-w-md w-full">
-          <h3 className="text-red-600 font-semibold mb-4">Error</h3>
+      <div className="min-h-screen flex items-center justify-center bg-[#e3f2fd]">
+        <div className="bg-white/40 backdrop-blur-lg p-8 rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] max-w-md w-full">
+          <h3 className="text-red-600 font-poppins font-semibold mb-4">
+            Error
+          </h3>
           <p className="text-gray-700 mb-4">{error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition-colors"
+            className="w-full bg-[#bbdefb] text-gray-700 py-2 rounded-lg hover:bg-[#90caf9] transition-colors duration-300 font-poppins"
           >
             Try Again
           </button>
@@ -995,21 +1055,17 @@ const DynamicQuestions = () => {
   // Early return if no medical data
   if (!medicalData) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md">
-          <h3 className="text-yellow-800 font-semibold mb-2">
-            No Medical Data
-          </h3>
-          <p className="text-yellow-600">
-            Please complete the medical form first.
+      <div className="min-h-screen bg-[#e3f2fd] flex items-center justify-center">
+        <motion.div
+          className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#bbdefb] mx-auto mb-4"></div>
+          <p className="text-gray-600 font-poppins">
+            Loading your assessment...
           </p>
-          <button
-            onClick={() => (window.location.href = "/medical-form")}
-            className="mt-4 bg-yellow-100 text-yellow-700 px-4 py-2 rounded hover:bg-yellow-200 transition-colors"
-          >
-            Go to Medical Form
-          </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
@@ -1177,261 +1233,308 @@ const DynamicQuestions = () => {
       );
     };
 
-    return (
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="max-w-6xl mx-auto px-4">
-          {/* Header Section */}
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              Health Risk Assessment Report
-            </h2>
-            <p className="text-gray-600">{assessmentReport.summary}</p>
-          </div>
+    // Add this animation variants object
+    const fadeInUp = {
+      initial: { opacity: 0, y: 20 },
+      animate: { opacity: 1, y: 0 },
+      exit: { opacity: 0, y: -20 },
+    };
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Risk Score and Vitals Section */}
-            <div className="lg:col-span-12 grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Risk Score Doughnut Chart */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
+    return (
+      <div className="min-h-screen bg-[#e3f2fd] py-12">
+        <motion.div
+          className="max-w-6xl mx-auto px-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Header Section with Underwriter Button */}
+          {assessmentReport && (
+            <motion.div
+              className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8 mb-6"
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="font-poppins text-4xl font-bold text-gray-800">
+                  Health Assessment Report
+                </h2>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-[#bbdefb] text-gray-700 px-6 py-3 rounded-xl font-poppins font-medium 
+                    hover:bg-[#90caf9] transition-colors duration-300 shadow-lg hover:shadow-xl"
+                  onClick={() => {
+                    const insights = generateUnderwriterInsights();
+                    // Handle displaying insights (you can add a modal or expand section)
+                    console.log("Underwriter Insights:", insights);
+                  }}
+                >
+                  View Underwriter Insights
+                </motion.button>
+              </div>
+              <p className="text-gray-600 font-poppins">
+                {assessmentReport.summary}
+              </p>
+            </motion.div>
+          )}
+
+          {/* Response-based Risk Analysis */}
+          {assessmentReport && (
+            <motion.div
+              className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8 mb-6"
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.5, delay: 0.2 }}
+            >
+              <h3 className="text-2xl font-poppins font-semibold text-gray-800 mb-6">
+                Response Analysis
+              </h3>
+              <div className="space-y-4">
+                {conversation.map((item, index) => {
+                  if (index % 2 === 0) {
+                    // Questions
+                    const answer = conversation[index + 1]?.content;
+                    return (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.5,
+                          delay: index * 0.1,
+                        }}
+                        className="bg-white/60 rounded-xl p-4"
+                      >
+                        <p className="font-poppins font-medium text-gray-700 mb-2">
+                          {item.content}
+                        </p>
+                        <p className="font-poppins text-gray-600 ml-4">
+                          {answer}
+                        </p>
+                      </motion.div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+            </motion.div>
+          )}
+
+          {/* Risk Score and Metrics */}
+          {assessmentReport && assessmentReport.healthMetrics && (
+            <motion.div
+              className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-6"
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              {/* Risk Score */}
+              <div className="lg:col-span-6 bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8">
+                <h3 className="text-2xl font-poppins font-semibold text-gray-800 mb-6">
                   Overall Health Risk
                 </h3>
-                <div className="relative h-64 flex items-center justify-center">
-                  <Doughnut
-                    data={riskChartData}
-                    options={{
-                      cutout: "70%",
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                          callbacks: {
-                            label: function (context) {
-                              return `Risk Level: ${context.raw}%`;
-                            },
-                          },
-                        },
-                      },
-                    }}
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center">
-                      <div
-                        className={`text-4xl font-bold ${
-                          assessmentReport.riskScore > 70
-                            ? "text-red-600"
-                            : assessmentReport.riskScore > 40
-                            ? "text-yellow-600"
-                            : "text-green-600"
-                        }`}
-                      >
-                        {assessmentReport.riskScore}%
-                      </div>
-                      <div className="text-sm text-gray-500">Risk Score</div>
-                    </div>
+                <div className="relative h-48 flex items-center justify-center">
+                  <div
+                    className={`text-6xl font-bold font-poppins ${
+                      assessmentReport.riskScore > 70
+                        ? "text-red-500"
+                        : assessmentReport.riskScore > 40
+                        ? "text-yellow-500"
+                        : "text-green-500"
+                    }`}
+                  >
+                    {assessmentReport.riskScore}%
                   </div>
-                </div>
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-green-600">Low Risk (0-40%)</span>
-                    <span className="text-yellow-600">
-                      Medium Risk (41-70%)
-                    </span>
-                    <span className="text-red-600">High Risk (71-100%)</span>
-                  </div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent rounded-full opacity-20"></div>
                 </div>
               </div>
 
-              {/* Health Metrics Detail */}
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  Health Metrics Analysis
+              {/* Health Metrics */}
+              <div className="lg:col-span-6 bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8">
+                <h3 className="text-2xl font-poppins font-semibold text-gray-800 mb-6">
+                  Health Metrics
                 </h3>
-                <div className="h-64">
-                  <Bar
-                    data={healthMetricsData}
-                    options={{
-                      ...healthMetricsOptions,
-                      plugins: {
-                        ...healthMetricsOptions.plugins,
-                        tooltip: {
-                          callbacks: {
-                            label: function (context) {
-                              const labels = {
-                                diet: "Dietary Health",
-                                exercise: "Physical Activity",
-                                sleep: "Sleep Quality",
-                                stress: "Stress Management",
-                              };
-                              return `${labels[context.label]}: ${
-                                context.raw
-                              }/10`;
-                            },
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Detailed Health Analysis */}
-            <div className="lg:col-span-8">
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                  Health Risk Analysis
-                </h3>
-                <div className="space-y-6">
-                  {potentialConditions.map((condition, index) => (
-                    <div
-                      key={index}
-                      className="border-b border-gray-200 pb-4 last:border-0"
+                {Object.entries(assessmentReport.healthMetrics).map(
+                  ([metric, score], index) => (
+                    <motion.div
+                      key={metric}
+                      className="mb-6 last:mb-0"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 0.5,
+                        delay: index * 0.1,
+                      }}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-lg font-medium text-gray-800">
-                          {condition.condition}
-                        </h4>
-                        <span
-                          className={`px-4 py-1 rounded-full text-sm font-medium ${
-                            condition.probability === "High"
-                              ? "bg-red-100 text-red-800"
-                              : condition.probability === "Medium"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {condition.probability} Risk
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-700 font-poppins capitalize">
+                          {metric}
+                        </span>
+                        <span className="text-[#bbdefb] font-poppins font-medium">
+                          {score}/10
                         </span>
                       </div>
-                      <p className="text-gray-600 mb-3">{condition.summary}</p>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <h5 className="font-medium text-gray-700 mb-2">
-                            Risk Factors:
-                          </h5>
-                          <ul className="list-disc pl-5 space-y-1">
-                            {condition.riskFactors.map((factor, idx) => (
-                              <li key={idx} className="text-gray-600">
-                                {factor}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                        <div>
-                          <h5 className="font-medium text-gray-700 mb-2">
-                            Prevention Steps:
-                          </h5>
-                          <ul className="list-disc pl-5 space-y-1">
-                            {condition.preventiveMeasures.map(
-                              (measure, idx) => (
-                                <li key={idx} className="text-gray-600">
-                                  {measure}
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
+                      <div className="w-full bg-white/30 rounded-full h-2">
+                        <motion.div
+                          className="bg-[#bbdefb] h-2 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${score * 10}%`,
+                          }}
+                          transition={{
+                            duration: 0.8,
+                            delay: index * 0.1,
+                          }}
+                        />
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    </motion.div>
+                  )
+                )}
               </div>
-            </div>
+            </motion.div>
+          )}
 
-            {/* Recommendations and Action Plan */}
-            <div className="lg:col-span-4 space-y-6">
-              {renderRecommendations()}
-            </div>
-          </div>
-
-          {/* Underwriter Section */}
-          <div className="mt-8">
-            <button
-              onClick={() => setShowUnderwriterButtons(!showUnderwriterButtons)}
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg 
-                hover:bg-blue-700 transition-colors duration-200"
+          {/* Potential Conditions */}
+          {assessmentReport?.potentialConditions?.length > 0 && (
+            <motion.div
+              className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8 mb-6"
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.5, delay: 0.4 }}
             >
-              {showUnderwriterButtons
-                ? "Hide Underwriter Controls"
-                : "Show Underwriter Controls"}
-            </button>
-
-            {showUnderwriterButtons && (
-              <div className="mt-6 space-y-6">
-                {/* Underwriter Summary */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
-                    Underwriter's Analysis
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500 mb-1">
-                        Overall Risk Level
-                      </div>
-                      <div
-                        className={`text-xl font-semibold ${
-                          assessmentReport.riskScore > 70
-                            ? "text-red-600"
-                            : assessmentReport.riskScore > 40
-                            ? "text-yellow-600"
-                            : "text-green-600"
+              <h3 className="text-2xl font-poppins font-semibold text-gray-800 mb-6">
+                Health Risks
+              </h3>
+              <div className="space-y-6">
+                {assessmentReport.potentialConditions.map((condition, idx) => (
+                  <motion.div
+                    key={idx}
+                    className="border-b border-white/20 pb-6 last:border-0"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.5,
+                      delay: idx * 0.1,
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-xl font-poppins font-medium text-gray-800">
+                        {condition.condition}
+                      </h4>
+                      <span
+                        className={`px-4 py-2 rounded-full text-sm font-poppins font-medium ${
+                          condition.probability === "High"
+                            ? "bg-red-100 text-red-800"
+                            : condition.probability === "Medium"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-green-100 text-green-800"
                         }`}
                       >
-                        {assessmentReport.riskScore}% -{" "}
-                        {assessmentReport.riskScore > 70
-                          ? "High Risk"
-                          : assessmentReport.riskScore > 40
-                          ? "Medium Risk"
-                          : "Low Risk"}
-                      </div>
+                        {condition.probability} Risk
+                      </span>
                     </div>
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500 mb-1">
-                        Risk Factors Identified
+                    <p className="text-gray-600 font-poppins mb-4">
+                      {condition.summary}
+                    </p>
+                    {condition.riskFactors?.length > 0 && (
+                      <div className="mt-4">
+                        <h5 className="font-poppins font-medium text-gray-700 mb-2">
+                          Risk Factors:
+                        </h5>
+                        <ul className="list-disc pl-5 space-y-2">
+                          {condition.riskFactors.map((factor, i) => (
+                            <li key={i} className="text-gray-600 font-poppins">
+                              {factor}
+                            </li>
+                          ))}
+                        </ul>
                       </div>
-                      <div className="text-xl font-semibold text-gray-800">
-                        {potentialConditions.length} Conditions
-                      </div>
-                    </div>
-                    <div className="p-4 bg-gray-50 rounded-lg">
-                      <div className="text-sm text-gray-500 mb-1">
-                        Required Actions
-                      </div>
-                      <div className="text-xl font-semibold text-gray-800">
-                        {recommendations.immediate.length} Items
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-                {/* Action Buttons */}
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => handleUnderwriterAction("pass")}
-                    className="flex-1 bg-green-500 text-white px-6 py-3 rounded-lg 
-                      hover:bg-green-600 transition-colors duration-200"
-                  >
-                    Approve Application
-                  </button>
-                  <button
-                    onClick={() => handleUnderwriterAction("review")}
-                    className="flex-1 bg-yellow-500 text-white px-6 py-3 rounded-lg 
-                      hover:bg-yellow-600 transition-colors duration-200"
-                  >
-                    Request Additional Review
-                  </button>
-                  <button
-                    onClick={() => handleUnderwriterAction("cancel")}
-                    className="flex-1 bg-red-500 text-white px-6 py-3 rounded-lg 
-                      hover:bg-red-600 transition-colors duration-200"
-                  >
-                    Decline Application
-                  </button>
+          {/* Recommendations */}
+          <motion.div
+            variants={fadeInUp}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.5, delay: 0.5 }}
+          >
+            {renderRecommendations()}
+          </motion.div>
+
+          {/* Add a section for detailed insights */}
+          {assessmentReport && (
+            <motion.div
+              className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8 mb-6"
+              variants={fadeInUp}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              transition={{ duration: 0.5, delay: 0.6 }}
+            >
+              <h3 className="text-2xl font-poppins font-semibold text-gray-800 mb-6">
+                Assessment Insights
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white/60 rounded-xl p-6">
+                  <h4 className="font-poppins font-medium text-gray-800 mb-4">
+                    Key Findings
+                  </h4>
+                  <ul className="space-y-2">
+                    {assessmentReport.keyFindings?.map((finding, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center text-gray-600 font-poppins"
+                      >
+                        <span className="w-2 h-2 bg-[#bbdefb] rounded-full mr-3"></span>
+                        {finding}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="bg-white/60 rounded-xl p-6">
+                  <h4 className="font-poppins font-medium text-gray-800 mb-4">
+                    Risk Indicators
+                  </h4>
+                  <ul className="space-y-2">
+                    {assessmentReport.riskIndicators?.map((indicator, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-center text-gray-600 font-poppins"
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full mr-3 ${
+                            indicator.level === "high"
+                              ? "bg-red-500"
+                              : indicator.level === "medium"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                          }`}
+                        ></span>
+                        {indicator.description}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               </div>
-            )}
-          </div>
-        </div>
+            </motion.div>
+          )}
+        </motion.div>
       </div>
     );
   } else if (isComplete) {
@@ -1448,65 +1551,52 @@ const DynamicQuestions = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12">
+    <div className="min-h-screen bg-[#e3f2fd] py-12">
       <div className="max-w-3xl mx-auto">
         {/* Progress Bar */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-6 mb-6">
           <div className="mb-4">
-            <div className="h-2 bg-gray-200 rounded-full">
+            <div className="h-2 bg-white/30 rounded-full">
               <div
-                className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-in-out"
+                className="h-full bg-[#bbdefb] rounded-full transition-all duration-500 ease-in-out"
                 style={{
                   width: `${(currentQuestionNumber / totalQuestions) * 100}%`,
                 }}
               ></div>
             </div>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-gray-600 mt-2 font-poppins">
               Question {currentQuestionNumber} of {totalQuestions}
             </p>
           </div>
         </div>
 
         {/* Question Card */}
-        {isLoadingQuestion ? (
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-              <p className="text-gray-600 font-medium">
-                Loading your next question...
-              </p>
-            </div>
-          </div>
-        ) : processingResponse ? (
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-              <p className="text-gray-600 font-medium">
-                Analyzing your response...
-              </p>
-              <p className="text-gray-400 text-sm mt-2">
-                Preparing next question
-              </p>
-            </div>
-          </div>
-        ) : currentQuestion ? (
-          <div className="bg-white rounded-lg shadow-md p-8">
+        {currentQuestion ? (
+          <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8">
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-6">
+              <h3 className="text-xl font-poppins font-semibold text-gray-800 mb-6">
                 {currentQuestion.text}
               </h3>
 
               {currentQuestion.type === "text" ? (
-                renderTextInput()
+                <div className="space-y-4">
+                  <textarea
+                    value={userResponse}
+                    onChange={(e) => setUserResponse(e.target.value)}
+                    placeholder={currentQuestion.placeholder}
+                    className="w-full p-4 rounded-xl bg-white/60 border border-white/20 focus:border-[#bbdefb] focus:ring-[#bbdefb] transition-colors duration-300 font-poppins"
+                    rows={4}
+                  />
+                </div>
               ) : (
                 <div className="space-y-4">
                   {currentQuestion.options?.map((option, index) => (
                     <div
                       key={index}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer ${
+                      className={`p-4 rounded-xl border-2 transition-all duration-300 cursor-pointer ${
                         userResponse === option
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-200"
+                          ? "border-[#bbdefb] bg-[#bbdefb]/10"
+                          : "border-white/20 hover:border-[#bbdefb]/50 bg-white/60"
                       }`}
                       onClick={() => setUserResponse(option)}
                     >
@@ -1518,11 +1608,11 @@ const DynamicQuestions = () => {
                           value={option}
                           checked={userResponse === option}
                           onChange={(e) => setUserResponse(e.target.value)}
-                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          className="w-4 h-4 text-[#bbdefb] border-gray-300 focus:ring-[#bbdefb]"
                         />
                         <label
                           htmlFor={`option-${index}`}
-                          className="ml-3 text-gray-700 cursor-pointer flex-grow"
+                          className="ml-3 text-gray-700 cursor-pointer flex-grow font-poppins"
                         >
                           {option}
                         </label>
@@ -1533,7 +1623,16 @@ const DynamicQuestions = () => {
               )}
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="bg-white/40 backdrop-blur-lg rounded-2xl shadow-[2px_2px_4px_rgba(255,255,255,0.2)] p-8">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#bbdefb] mx-auto mb-4"></div>
+              <p className="text-gray-600 font-poppins">
+                Loading your question...
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Submit Button */}
         {currentQuestion && !isLoadingQuestion && !processingResponse && (
@@ -1541,11 +1640,11 @@ const DynamicQuestions = () => {
             <button
               onClick={handleSubmitResponse}
               disabled={!userResponse.trim()}
-              className={`w-full py-3 px-6 rounded-lg text-white font-medium transition-colors duration-200 
+              className={`w-full py-3 px-6 rounded-xl font-poppins font-medium transition-all duration-300 
                 ${
                   userResponse.trim()
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-gray-400 cursor-not-allowed"
+                    ? "bg-[#bbdefb] text-gray-700 hover:bg-[#90caf9] shadow-lg hover:shadow-xl"
+                    : "bg-gray-200 text-gray-400 cursor-not-allowed"
                 }`}
             >
               Submit Response
