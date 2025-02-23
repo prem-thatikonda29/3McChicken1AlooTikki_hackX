@@ -41,25 +41,9 @@ export default function Stack({
   cardsData = [],
   animationConfig = { stiffness: 260, damping: 20 },
   sendToBackOnClick = false,
+  onTopCardChange,
 }) {
-  const [cards, setCards] = useState(
-    cardsData.length
-      ? cardsData
-      : [
-          {
-            id: 1,
-            img: "https://i.pinimg.com/736x/3a/78/5b/3a785b676b81ddb73f0e305f467d8b45.jpgt",
-          },
-          {
-            id: 2,
-            img: "https://i.pinimg.com/736x/3a/78/5b/3a785b676b81ddb73f0e305f467d8b45.jpgt",
-          },
-          {
-            id: 3,
-            img: "https://i.pinimg.com/736x/3a/78/5b/3a785b676b81ddb73f0e305f467d8b45.jpgt",
-          },
-        ]
-  );
+  const [cards, setCards] = useState(cardsData);
 
   const sendToBack = (id) => {
     setCards((prev) => {
@@ -67,6 +51,7 @@ export default function Stack({
       const index = newCards.findIndex((card) => card.id === id);
       const [card] = newCards.splice(index, 1);
       newCards.unshift(card);
+      onTopCardChange(newCards[newCards.length - 1].id);
       return newCards;
     });
   };
@@ -81,9 +66,7 @@ export default function Stack({
       }}
     >
       {cards.map((card, index) => {
-        const randomRotate = randomRotation
-          ? Math.random() * 10 - 5 // Random degree between -5 and 5
-          : 0;
+        const randomRotate = randomRotation ? Math.random() * 10 - 5 : 0;
 
         return (
           <CardRotate
@@ -112,20 +95,12 @@ export default function Stack({
                 alignItems: "center",
                 justifyContent: "center",
                 backgroundColor: "#333",
-                color: "white", // Ensuring icons are visible
+                color: "white",
               }}
             >
-              {card.type === "image" ? (
-                <img
-                  src={card.img}
-                  alt={`card-${card.id}`}
-                  className="w-full h-full object-cover pointer-events-none"
-                />
-              ) : (
-                <div className="flex items-center justify-center">
-                  {card.img} {/* Directly rendering the JSX icon */}
-                </div>
-              )}
+              <div className="flex flex-col items-center justify-center">
+                {card.img}
+              </div>
             </motion.div>
           </CardRotate>
         );
