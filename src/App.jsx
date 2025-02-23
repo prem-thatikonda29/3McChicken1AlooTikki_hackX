@@ -12,7 +12,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         {/* <Route path="/form" element={<Form />} /> */}
-        <Route path="/dynamic" element={<DynamicQuestions />} />
+        <Route path="/questions" element={<DynamicQuestions />} />
         <Route path="/home" element={<Home />} />
       </Routes>
     </Router>
