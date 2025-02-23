@@ -9,7 +9,7 @@
 ---
 
 ## 🏥 About Vitals
-MedTrack is an AI-powered **health monitoring and medical record management system** designed to empower users by providing real-time health tracking, symptom analysis, and emergency assistance. With MedTrack, users can efficiently **store, analyze, and retrieve medical records**, ensuring they receive timely medical attention when needed.
+Vitals is an AI-powered **health monitoring and medical record management system** designed to empower users by providing real-time health tracking, symptom analysis, and emergency assistance. With MedTrack, users can efficiently **store, analyze, and retrieve medical records**, ensuring they receive timely medical attention when needed.
 
 ### 🌟 Key Features
 ✔ **📋 Health Record Management** - Store and track personal medical history, prescriptions, and doctor visits seamlessly.  
