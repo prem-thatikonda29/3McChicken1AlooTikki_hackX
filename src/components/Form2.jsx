@@ -818,7 +818,7 @@ const MedicalForm = () => {
       });
 
       // Navigate to home page
-      navigate("/");
+      navigate("/questions");
     } catch (error) {
       console.error("Error creating medical record:", error);
       alert(
